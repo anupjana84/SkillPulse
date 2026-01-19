@@ -10,10 +10,43 @@ import {
   Dimensions,
 } from 'react-native';
 import { FontAwesome6 } from '@react-native-vector-icons/fontawesome6';
-// import {logoImage} from '../../images/image';
+import { useAuthStore } from '../../store/authStore';
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
+import { useForm, Controller } from "react-hook-form";
+
+// 1. Define the Validation Schema
+const schema = yup.object({
+
+  email: yup
+    .string()
+    .required("Email is required")
+    .email("Please enter a valid email address"),
+  password: yup
+    .string()
+    .required("Password is required")
+    .min(8, "Password must be at least 8 characters long")
+  // .matches(
+  //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+  //   "Must contain one uppercase, one lowercase, and one number"
+  // ),
+}).required();
 
 
-const LoginScreen = () => {
+const RegisterScreen = () => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isValid, isSubmitting },
+  } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+  const { login, isLoading, error } = useAuthStore();
+
   // console.log(logoImage)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,6 +57,8 @@ const LoginScreen = () => {
   };
 
   const handleLogin = () => {
+
+    login(email, password);
     // Handle login logic here
     console.log('Email:', email);
     console.log('Password:', password);
@@ -55,7 +90,7 @@ const LoginScreen = () => {
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <Image
-            source={require("../../images/pp.png")}
+            source={require("../.././assets/images/pp.png")}
             style={[styles.logo, { width: 100, height: 100 }]}
           />
         </View>
@@ -66,64 +101,89 @@ const LoginScreen = () => {
       </View>
       <View style={styles.header}>
         <Image
-          source={require("../../images/header.png")}
-          style={{ width: "80%", height: 50, resizeMode: 'cover' }}
+          source={require("../.././assets/images/header.png")}
+          style={{ width: "80%", height: 50, resizeMode: 'contain' }}
         />
       </View>
       {/* Form */}
       <View style={styles.formContainer}>
         {/* Email Input */}
-        <View style={styles.inputContainer}>
-          {/* <Image
+
+        {/* <Image
             source={require('./assets/email-icon.png')} 
             style={styles.icon}
           /> */}
-          <TextInput
-            style={styles.input}
-            placeholder="Email Address"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
+        <View style={styles.inputContainer}>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.email && styles.inputError]}
+                placeholder="Email"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                autoCapitalize="none"
+              />
+            )}
           />
         </View>
+        {errors.email && <Text style={styles.errorText}>{errors.email.message}</Text>}
+
 
         {/* Password Input */}
         <View style={styles.inputContainer}>
           {/* <Image
-            source={require('./assets/password-icon.png')} // Replace with actual icon path
+            source={require('./assets/password-icon.png')} 
             style={styles.icon}
           /> */}
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
+
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.password && styles.inputError]}
+                placeholder="Password"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                value={value}
+                secureTextEntry
+              />
+            )}
           />
-          <TouchableOpacity onPress={toggleShowPassword} style={styles.eyeIcon}>
-            {/* <Image
+        </View>
+        {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+        <TouchableOpacity onPress={toggleShowPassword} style={styles.eyeIcon}>
+          {/* <Image
               source={
                 showPassword
-                  ? require('./assets/eye-open.png') // Replace with actual icon path
-                  : require('./assets/eye-closed.png') // Replace with actual icon path
+                  ? require('./assets/eye-open.png') 
+                  : require('./assets/eye-closed.png') 
               }
               style={styles.eyeIconImage}
             /> */}
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+
 
         {/* Forgot Password */}
-        <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
+        <TouchableOpacity
+
+          onPress={handleForgotPassword} style={styles.forgotPassword}>
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
         {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Log In</Text>
+        <TouchableOpacity
+          disabled={!isValid || isSubmitting}
+          style={[styles.loginButton,
+          (!isValid || isSubmitting) && styles.buttonDisabled
+          ]} onPress={handleSubmit(handleLogin)}>
+          <Text style={styles.loginButtonText}>
+
+            {isSubmitting ? "Loading..." : " Log In"}
+          </Text>
 
           <FontAwesome6 name="arrow-right-long" color="#ffff00" size={20}
             iconStyle="solid" style={{ marginLeft: 10 }} />
@@ -140,14 +200,14 @@ const LoginScreen = () => {
         <View style={styles.socialContainer}>
           <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin}>
             {/* <Image
-              source={require('./assets/google-logo.png')} // Replace with actual logo path
+              source={require('./assets/google-logo.png')} 
               style={styles.socialIcon}
             /> */}
             {/* <FontAwesome5 name="home" iconType="solid" /> */}
           </TouchableOpacity>
           <TouchableOpacity style={styles.socialButton} onPress={handleAppleLogin}>
             {/* <Image
-              source={require('./assets/apple-logo.png')} // Replace with actual logo path
+              source={require('./assets/apple-logo.png')} 
               style={styles.socialIcon}
             /> */}
           </TouchableOpacity>
@@ -161,14 +221,14 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0C14', // Dark background color
+    backgroundColor: '#0F0C14',
   },
   header: {
     alignItems: 'center',
@@ -306,6 +366,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  inputError: {
+    borderColor: "#ff0000",
+  },
+  errorText: {
+    color: "#ff0000",
+    alignSelf: "flex-start",
+    marginBottom: 5,
+    fontSize: 12,
+  },
+  buttonDisabled: {
+    backgroundColor: "#cccccc", // Grey color when disabled
+    opacity: 0.7, // Slight transparency for a "faded" look
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 });
 
-export default LoginScreen;
+export default RegisterScreen;
